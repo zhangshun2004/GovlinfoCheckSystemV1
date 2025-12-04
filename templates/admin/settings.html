@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="layui-card">
+    <div class="layui-card-header">系统设置</div>
+    <div class="layui-card-body">
+        <form class="layui-form" action="{{ url_for('admin.settings') }}" method="post">
+            <div class="layui-form-item">
+                <label class="layui-form-label">应用名称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="app_name" required lay-verify="required" value="{{ setting.app_name }}" class="layui-input">
+                </div>
+            </div>
+            <!-- 
+            <div class="layui-form-item">
+                <label class="layui-form-label">系统LOGO</label>
+                <div class="layui-input-block">
+                    <button type="button" class="layui-btn" id="uploadLogo">
+                        <i class="layui-icon">&#xe67c;</i>上传图片
+                    </button>
+                </div>
+            </div>
+            -->
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn" lay-submit>保存设置</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or '政企智能舆情分析报告生成智能体应用系统' }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='layui/css/layui.css') }}">
+  <style>
+    body {
+        background-color: #f0f2f5;
+    }
+
+    .layui-layout-admin .layui-header {
+        background-color: #fff !important;
+        box-shadow: 0 1px 4px rgba(0,21,41,.08);
+        border-bottom: none;
+    }
+    
+    .layui-layout-admin .layui-logo {
+        color: #333 !important;
+        font-weight: bold;
+        box-shadow: none;
+        border-right: 1px solid #f0f0f0;
+    }
+
+    .layui-header .layui-nav .layui-nav-item a {
+        color: #666 !important;
+    }
+    
+    .layui-header .layui-nav .layui-nav-item a:hover {
+        color: #1890ff !important;
+    }
+    
+    .layui-side {
+        background-color: #001529 !important;
+        box-shadow: 2px 0 8px 0 rgba(29,35,41,.05);
+    }
+    
+    .layui-nav-tree {
+        background-color: transparent !important;
+    }
+    
+    .layui-nav-itemed > a, .layui-nav-tree .layui-nav-title {
+        background-color: transparent !important;
+    }
+    
+    .layui-nav-tree .layui-this, .layui-nav-tree .layui-this > a, .layui-nav-tree .layui-nav-child dd.layui-this, .layui-nav-tree .layui-nav-child dd.layui-this a {
+        background-color: #1890ff !important;
+        color: #fff !important;
+    }
+    
+    .layui-nav-tree .layui-nav-bar {
+        background-color: #1890ff !important;
+    }
+    
+    .layui-body {
+        background-color: #f0f2f5;
+        padding: 16px;
+    }
+    
+    .layui-card {
+        border-radius: 2px;
+        box-shadow: 0 1px 2px 0 rgba(0,0,0,.05);
+    }
+    
+    .layui-card-header {
+        border-bottom: 1px solid #f0f0f0;
+        font-weight: 500;
+    }
+    
+    .layui-footer {
+        background-color: transparent !important;
+        text-align: center;
+        box-shadow: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+      <div class="layui-logo" style="width: 240px;">舆情分析系统</div>
+      <ul class="layui-nav layui-layout-right">
+        {% if current_user.is_authenticated %}
+        <li class="layui-nav-item">
+            <a href="javascript:;">
+                <i class="layui-icon layui-icon-username" style="margin-right: 5px;"></i>
+                {{ current_user.username }}
+            </a>
+            <dl class="layui-nav-child">
+                <dd><a href="{{ url_for('auth.logout') }}">退出登录</a></dd>
+            </dl>
+        </li>
+        {% else %}
+        <li class="layui-nav-item"><a href="{{ url_for('auth.login') }}">登录</a></li>
+        {% endif %}
+      </ul>
+    </div>
+    
+    <div class="layui-side">
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree" lay-filter="test">
+                <li class="layui-nav-item layui-nav-itemed">
+                    <a href="javascript:;"><i class="layui-icon layui-icon-app" style="margin-right: 10px;"></i>功能菜单</a>
+                    <dl class="layui-nav-child">
+                        <dd><a href="{{ url_for('main.index') }}">工作台</a></dd>
+                        <dd><a href="{{ url_for('crawler.manager') }}">数据采集管理</a></dd>
+                        <dd><a href="{{ url_for('crawler.search_page') }}">全网采集(旧版)</a></dd>
+                        {% if current_user.is_authenticated and current_user.role.name == 'Administrator' %}
+                        <dd><a href="{{ url_for('admin.users') }}">用户管理</a></dd>
+                        <dd><a href="{{ url_for('admin.settings') }}">系统设置</a></dd>
+                        {% endif %}
+                    </dl>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="layui-body" style="left: 240px;">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="layui-alert layui-bg-{{ 'red' if category == 'error' else 'green' }}" style="margin-bottom: 15px; padding: 10px; border-radius: 2px;">
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+    
+    <div class="layui-footer" style="left: 240px;">
+        © 2025 政企智能舆情分析报告生成智能体应用系统
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='layui/layui.js') }}"></script>
+  <script>
+  layui.use('element', function(){
+    var element = layui.element;
+  });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

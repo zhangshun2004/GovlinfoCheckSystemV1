@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="layui-card">
+    <div class="layui-card-header">用户管理</div>
+    <div class="layui-card-body">
+        <div style="margin-bottom: 10px;">
+            <button class="layui-btn" id="btnAddUser">添加用户</button>
+        </div>
+        <table class="layui-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>用户名</th>
+                    <th>角色</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.role.name if user.role else '无角色' }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="layui-btn layui-btn-danger layui-btn-xs" onclick="return confirm('确定删除？')">删除</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 添加用户弹窗 -->
+<div id="addUserModal" style="display: none; padding: 20px;">
+    <form class="layui-form" action="{{ url_for('admin.add_user') }}" method="post">
+        <div class="layui-form-item">
+            <label class="layui-form-label">用户名</label>
+            <div class="layui-input-block">
+                <input type="text" name="username" required lay-verify="required" placeholder="请输入用户名" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">密码</label>
+            <div class="layui-input-block">
+                <input type="password" name="password" required lay-verify="required" placeholder="请输入密码" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">角色</label>
+            <div class="layui-input-block">
+                <select name="role_id" lay-verify="required">
+                    {% for role in roles %}
+                    <option value="{{ role.id }}">{{ role.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit>立即提交</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+layui.use(['layer', 'form'], function(){
+  var layer = layui.layer;
+  var form = layui.form;
+  
+  document.getElementById('btnAddUser').onclick = function(){
+    layer.open({
+      type: 1,
+      title: '添加用户',
+      content: layui.$('#addUserModal'),
+      area: ['500px', '400px']
+    });
+  };
+});
+</script>
+{% endblock %}

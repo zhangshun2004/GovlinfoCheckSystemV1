@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="layui-row layui-col-space15">
+  <!-- 统计卡片区域 -->
+  <div class="layui-col-md3">
+    <div class="layui-card">
+      <div class="layui-card-header">今日舆情总量</div>
+      <div class="layui-card-body">
+        <div style="font-size: 30px; color: #333; font-weight: 500; margin-bottom: 10px;">1,284</div>
+        <div style="color: #8c8c8c; font-size: 12px;">
+            日同比 12% <i class="layui-icon layui-icon-up" style="color: #f5222d;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="layui-col-md3">
+    <div class="layui-card">
+      <div class="layui-card-header">负面舆情预警</div>
+      <div class="layui-card-body">
+        <div style="font-size: 30px; color: #333; font-weight: 500; margin-bottom: 10px;">23</div>
+        <div style="color: #8c8c8c; font-size: 12px;">
+            日同比 -5% <i class="layui-icon layui-icon-down" style="color: #52c41a;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="layui-col-md3">
+    <div class="layui-card">
+      <div class="layui-card-header">报告生成数</div>
+      <div class="layui-card-body">
+        <div style="font-size: 30px; color: #333; font-weight: 500; margin-bottom: 10px;">45</div>
+        <div style="color: #8c8c8c; font-size: 12px;">
+            待审核任务 <span style="color: #1890ff;">3</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="layui-col-md3">
+    <div class="layui-card">
+      <div class="layui-card-header">活跃用户</div>
+      <div class="layui-card-body">
+        <div style="font-size: 30px; color: #333; font-weight: 500; margin-bottom: 10px;">12</div>
+        <div style="color: #8c8c8c; font-size: 12px;">
+            当前在线 <span style="color: #1890ff;">5</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="layui-row layui-col-space15">
+    <!-- 快捷入口 -->
+    <div class="layui-col-md8">
+        <div class="layui-card">
+            <div class="layui-card-header">舆情趋势分析</div>
+            <div class="layui-card-body" style="height: 320px; display: flex; justify-content: center; align-items: center;">
+                <div style="text-align: center; color: #bfbfbf;">
+                    <i class="layui-icon layui-icon-chart-screen" style="font-size: 48px; display: block; margin-bottom: 10px;"></i>
+                    <span>数据可视化区域</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="layui-col-md4">
+        <div class="layui-card">
+            <div class="layui-card-header">最新动态</div>
+            <div class="layui-card-body" style="height: 320px;">
+                <ul class="layui-timeline">
+                    <li class="layui-timeline-item">
+                        <i class="layui-icon layui-timeline-axis" style="color: #1890ff;">&#xe63f;</i>
+                        <div class="layui-timeline-content layui-text">
+                            <div class="layui-timeline-title" style="font-size: 14px; margin-bottom: 5px;">12月03日</div>
+                            <p style="color: #666;">系统界面全新升级，采用极简设计风格。</p>
+                        </div>
+                    </li>
+                    <li class="layui-timeline-item">
+                        <i class="layui-icon layui-timeline-axis">&#xe63f;</i>
+                        <div class="layui-timeline-content layui-text">
+                            <div class="layui-timeline-title" style="font-size: 14px; margin-bottom: 5px;">11月30日</div>
+                            <p style="color: #666;">新增舆情自动抓取模块 v1.0。</p>
+                        </div>
+                    </li>
+                    <li class="layui-timeline-item">
+                        <i class="layui-icon layui-timeline-axis">&#xe63f;</i>
+                        <div class="layui-timeline-content layui-text">
+                            <div class="layui-timeline-title" style="font-size: 14px; margin-bottom: 5px;">11月28日</div>
+                            <p style="color: #666;">系统基础框架搭建完成。</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

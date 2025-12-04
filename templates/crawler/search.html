@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="layui-row layui-col-space15">
+    <div class="layui-col-md12">
+        <div class="layui-card">
+            <div class="layui-card-header">全网舆情采集</div>
+            <div class="layui-card-body">
+                <form class="layui-form" action="" onsubmit="return false;">
+                    <div class="layui-form-item">
+                        <div class="layui-input-group" style="width: 100%;">
+                            <div class="layui-input-prefix">
+                                <i class="layui-icon layui-icon-search"></i>
+                            </div>
+                            <input type="text" id="searchInput" name="keyword" placeholder="请输入关键词进行舆情采集..." class="layui-input" autocomplete="off">
+                            <div class="layui-input-split layui-input-suffix" style="cursor: pointer;" id="btnSearch">
+                                搜索
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-col-md12">
+        <div class="layui-card">
+            <div class="layui-card-header">采集结果 <span class="layui-badge layui-bg-blue" id="resultCount" style="display:none;">0</span></div>
+            <div class="layui-card-body">
+                <div id="loading" style="display: none; text-align: center; padding: 30px;">
+                    <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop" style="font-size: 30px; color: #1e9fff;"></i>
+                    <p style="margin-top: 10px; color: #999;">正在采集数据，请稍候...</p>
+                </div>
+                
+                <div id="resultList">
+                    <div style="text-align: center; padding: 50px; color: #ccc;">
+                        <i class="layui-icon layui-icon-find-fill" style="font-size: 48px; display: block; margin-bottom: 10px;"></i>
+                        <p>暂无数据，请在上方输入关键词搜索</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+layui.use(['layer', 'form', 'jquery'], function(){
+    var layer = layui.layer;
+    var $ = layui.jquery;
+    
+    // 搜索点击事件 - 使用事件委托确保绑定成功
+    $(document).on('click', '#btnSearch', function(){
+        console.log("点击搜索");
+        doSearch();
+    });
+    
+    // 回车事件
+    $(document).on('keypress', '#searchInput', function(e){
+        if(e.which == 13) {
+            doSearch();
+        }
+    });
+    
+    function doSearch() {
+        var keyword = $('#searchInput').val();
+        if(!keyword) {
+            layer.msg('请输入搜索关键词');
+            return;
+        }
+        
+        $('#loading').show();
+        $('#resultList').hide();
+        
+        $.ajax({
+            url: "{{ url_for('crawler.search_api') }}",
+            type: 'GET',
+            data: { keyword: keyword },
+            success: function(res) {
+                $('#loading').hide();
+                $('#resultList').show();
+                
+                if(res.code === 0 && res.data.length > 0) {
+                    $('#resultCount').text(res.count).show();
+                    renderResults(res.data);
+                } else {
+                    $('#resultCount').hide();
+                    $('#resultList').html(`
+                        <div style="text-align: center; padding: 50px; color: #ccc;">
+                            <i class="layui-icon layui-icon-face-surprised" style="font-size: 48px; display: block; margin-bottom: 10px;"></i>
+                            <p>未找到相关结果</p>
+                        </div>
+                    `);
+                }
+            },
+            error: function() {
+                $('#loading').hide();
+                $('#resultList').show();
+                layer.msg('请求失败，请稍后重试');
+            }
+        });
+    }
+    
+    function renderResults(data) {
+        var html = '<div class="layui-flow-more">';
+        data.forEach(function(item) {
+            var coverHtml = item.cover ? `<div class="layui-col-xs3 layui-col-sm2"><img src="${item.cover}" style="width: 100%; border-radius: 4px;"></div>` : '';
+            var contentClass = item.cover ? 'layui-col-xs9 layui-col-sm10' : 'layui-col-xs12';
+            
+            html += `
+            <div class="layui-row layui-col-space15" style="border-bottom: 1px solid #f0f0f0; padding: 15px 0;">
+                ${coverHtml}
+                <div class="${contentClass}">
+                    <h3 style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">
+                        <a href="${item.original_url}" target="_blank" style="color: #1e9fff;">${item.title}</a>
+                    </h3>
+                    <p style="color: #666; font-size: 14px; line-height: 1.6; margin-bottom: 8px;">${item.summary}</p>
+                    <div style="color: #999; font-size: 12px;">
+                        <span class="layui-badge layui-bg-gray">${item.source}</span>
+                    </div>
+                </div>
+            </div>
+            `;
+        });
+        html += '</div>';
+        $('#resultList').html(html);
+    }
+});
+</script>
+{% endblock %}

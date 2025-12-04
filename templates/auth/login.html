@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} - 政企智能舆情分析报告生成智能体应用系统</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='layui/css/layui.css') }}">
+  <style>
+    body {
+        background-color: #f2f4f7;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        margin: 0;
+    }
+
+    .login-container {
+        width: 100%;
+        max-width: 400px;
+        background: #fff;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .login-header h2 {
+        color: #333;
+        font-size: 24px;
+        font-weight: 500;
+        margin-bottom: 10px;
+    }
+
+    .login-header p {
+        color: #888;
+        font-size: 14px;
+    }
+
+    .layui-input {
+        height: 42px;
+        border-color: #e6e6e6;
+        border-radius: 4px;
+        transition: all .3s;
+    }
+
+    .layui-input:focus {
+        border-color: #1e9fff;
+        box-shadow: 0 0 0 3px rgba(30, 159, 255, 0.1);
+    }
+
+    .layui-input-prefix {
+        line-height: 42px;
+        color: #999;
+    }
+
+    .btn-login {
+        height: 42px;
+        line-height: 42px;
+        font-size: 16px;
+        background-color: #1e9fff;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(30, 159, 255, 0.3);
+        transition: all .3s;
+    }
+
+    .btn-login:hover {
+        background-color: #168ade;
+        box-shadow: 0 4px 12px rgba(30, 159, 255, 0.4);
+    }
+
+    .footer {
+        text-align: center;
+        margin-top: 20px;
+        color: #999;
+        font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-header">
+        <h2>用户登录</h2>
+        <p>政企智能舆情分析报告生成智能体应用系统</p>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="layui-alert layui-bg-{{ 'red' if category == 'error' else 'green' }}" style="margin-bottom: 20px; border-radius: 4px;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form class="layui-form" action="{{ url_for('auth.login') }}" method="post">
+      <div class="layui-form-item">
+        <div class="layui-input-wrap">
+            <div class="layui-input-prefix"><i class="layui-icon layui-icon-username"></i></div>
+            <input type="text" name="username" lay-verify="required" placeholder="请输入账号" class="layui-input" required>
+        </div>
+      </div>
+      <div class="layui-form-item">
+        <div class="layui-input-wrap">
+            <div class="layui-input-prefix"><i class="layui-icon layui-icon-password"></i></div>
+            <input type="password" name="password" lay-verify="required" placeholder="请输入密码" class="layui-input" required>
+        </div>
+      </div>
+      <div class="layui-form-item" style="margin-bottom: 20px;">
+        <input type="checkbox" name="remember" title="自动登录" lay-skin="primary">
+      </div>
+      <div class="layui-form-item">
+        <button class="layui-btn layui-btn-fluid btn-login" lay-submit>登 录</button>
+      </div>
+    </form>
+    
+    <div class="footer">
+        &copy; 2025 GovlInfo Check System
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='layui/layui.js') }}"></script>
+  <script>
+    layui.use(['form'], function(){
+        var form = layui.form;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-header">
+            <span class="layui-breadcrumb">
+              <a href="{{ url_for('main.index') }}">首页</a>
+              <a><cite>采集规则库</cite></a>
+            </span>
+        </div>
+        <div class="layui-card-body">
+            <div style="margin-bottom: 15px;">
+                <button class="layui-btn layui-btn-normal" id="btnAdd">
+                    <i class="layui-icon layui-icon-add-1"></i> 新增规则
+                </button>
+                <button class="layui-btn layui-btn-danger" id="btnBatchDelete">
+                    <i class="layui-icon layui-icon-delete"></i> 批量删除
+                </button>
+            </div>
+            
+            <table id="rulesTable" lay-filter="rulesTable"></table>
+        </div>
+    </div>
+</div>
+
+<!-- 操作列模板 -->
+<script type="text/html" id="toolBar">
+    <a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="copy">复制</a>
+    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+</script>
+
+<!-- 规则编辑弹窗 -->
+<div id="ruleModal" style="display: none; padding: 20px;">
+    <form class="layui-form" lay-filter="ruleForm">
+        <input type="hidden" name="id">
+        <div class="layui-form-item">
+            <label class="layui-form-label">站点名称</label>
+            <div class="layui-input-block">
+                <input type="text" name="site_name" required lay-verify="required" placeholder="请输入站点名称（如：新华网）" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">域名</label>
+            <div class="layui-input-block">
+                <input type="text" name="domain" placeholder="请输入站点域名（如：xinhuanet.com）" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">标题XPath</label>
+            <div class="layui-input-block">
+                <input type="text" name="title_xpath" placeholder="请输入标题的XPath规则" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">内容XPath</label>
+            <div class="layui-input-block">
+                <input type="text" name="content_xpath" placeholder="请输入详细内容的XPath规则" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">请求头Headers</label>
+            <div class="layui-input-block">
+                <textarea name="headers" placeholder="请输入JSON格式的Headers，例如：{&quot;User-Agent&quot;: &quot;...&quot;}" class="layui-textarea" style="height: 150px;"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="saveRule">保存提交</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+layui.use(['table', 'form', 'layer', 'jquery'], function(){
+    var table = layui.table;
+    var form = layui.form;
+    var layer = layui.layer;
+    var $ = layui.jquery;
+    
+    // 渲染表格
+    var tableIns = table.render({
+        elem: '#rulesTable',
+        url: "{{ url_for('crawler.rules_list_api') }}",
+        page: true,
+        skin: 'line',
+        cols: [[
+            {type: 'checkbox', fixed: 'left'},
+            {field: 'id', title: 'ID', width: 80, sort: true, align: 'center'},
+            {field: 'site_name', title: '站点名称', width: 200, sort: true},
+            {field: 'domain', title: '域名', width: 200},
+            {field: 'title_xpath', title: '标题XPath', minWidth: 200},
+            {field: 'content_xpath', title: '内容XPath', minWidth: 200},
+            {field: 'created_at', title: '创建时间', width: 180, sort: true, align: 'center'},
+            {title: '操作', width: 200, toolbar: '#toolBar', fixed: 'right', align: 'center'}
+        ]]
+    });
+    
+    // 新增
+    $('#btnAdd').on('click', function(){
+        form.val('ruleForm', {
+            "id": "",
+            "site_name": "",
+            "domain": "",
+            "title_xpath": "",
+            "content_xpath": "",
+            "headers": ""
+        });
+        
+        layer.open({
+            type: 1,
+            title: '新增采集规则',
+            area: ['600px', '500px'],
+            content: $('#ruleModal'),
+            success: function(){
+                form.render();
+            }
+        });
+    });
+    
+    // 批量删除
+    $('#btnBatchDelete').on('click', function(){
+        var checkStatus = table.checkStatus('rulesTable');
+        var data = checkStatus.data;
+        
+        if(data.length === 0){
+            layer.msg('请选择要删除的规则');
+            return;
+        }
+        
+        layer.confirm('确定要删除选中的 ' + data.length + ' 条规则吗？', function(index){
+            var ids = data.map(item => item.id);
+            
+            $.ajax({
+                url: "{{ url_for('crawler.rules_delete_api') }}",
+                type: 'DELETE',
+                contentType: 'application/json',
+                data: JSON.stringify({ ids: ids }),
+                success: function(res){
+                    if(res.code === 0){
+                        layer.msg('删除成功');
+                        tableIns.reload();
+                    } else {
+                        layer.msg('删除失败: ' + res.msg);
+                    }
+                }
+            });
+            layer.close(index);
+        });
+    });
+    
+    // 行工具事件
+    table.on('tool(rulesTable)', function(obj){
+        var data = obj.data;
+        
+        if(obj.event === 'del'){
+            layer.confirm('确定要删除该规则吗？', function(index){
+                $.ajax({
+                    url: "{{ url_for('crawler.rules_delete_api') }}",
+                    type: 'DELETE',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ ids: [data.id] }),
+                    success: function(res){
+                        if(res.code === 0){
+                            layer.msg('删除成功');
+                            obj.del();
+                        } else {
+                            layer.msg('删除失败: ' + res.msg);
+                        }
+                    }
+                });
+                layer.close(index);
+            });
+        } else if(obj.event === 'copy'){
+            layer.confirm('确定要复制该规则吗？', function(index){
+                $.ajax({
+                    url: "{{ url_for('crawler.rules_copy_api') }}",
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ id: data.id }),
+                    success: function(res){
+                        if(res.code === 0){
+                            layer.msg('复制成功');
+                            tableIns.reload();
+                        } else {
+                            layer.msg('复制失败: ' + res.msg);
+                        }
+                    }
+                });
+                layer.close(index);
+            });
+        } else if(obj.event === 'edit'){
+            // 获取详情 (虽然可以直接用obj.data，但为了获取最新的可能更保险，这里简化直接用obj.data)
+            // 如果headers是JSON字符串，可能需要格式化显示？这里暂不处理
+            form.val('ruleForm', data);
+            
+            layer.open({
+                type: 1,
+                title: '编辑采集规则',
+                area: ['600px', '500px'],
+                content: $('#ruleModal'),
+                success: function(){
+                    form.render();
+                }
+            });
+        }
+    });
+    
+    // 表单提交
+    form.on('submit(saveRule)', function(data){
+        var field = data.field;
+        var method = field.id ? 'PUT' : 'POST';
+        
+        $.ajax({
+            url: "{{ url_for('crawler.rules_create_api') }}", // PUT/POST uses same base URL but different method logic handled in routes?
+            // Wait, I defined /api/rules for POST and /api/rules for PUT.
+            // But in AJAX I need to specify method.
+            // And the URL is same.
+            url: "{{ url_for('crawler.rules_list_api') }}", // This might be confusing because url_for points to function name.
+            // Actually I used the same route path '/api/rules' for POST and PUT in backend.
+            // So I can just use any function name that maps to '/api/rules' or hardcode it.
+            // url_for('crawler.rules_create_api') -> /crawler/api/rules
+            
+            type: method,
+            contentType: 'application/json',
+            data: JSON.stringify(field),
+            success: function(res){
+                if(res.code === 0){
+                    layer.msg(res.msg);
+                    layer.closeAll('page');
+                    tableIns.reload();
+                } else {
+                    layer.msg(res.msg);
+                }
+            }
+        });
+        return false;
+    });
+});
+</script>
+{% endblock %}

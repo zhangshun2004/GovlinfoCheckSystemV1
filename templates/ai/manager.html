@@ -1,0 +1,629 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="layui-container" style="padding-top: 20px; max-width: 1200px;">
+    <!-- Header Section -->
+    <div class="layui-row" style="margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center;">
+            <i class="layui-icon layui-icon-engine" style="font-size: 28px; color: #333; margin-right: 15px;"></i>
+            <div>
+                <h2 style="font-size: 24px; color: #333; margin-bottom: 5px; font-weight: 600;">AI 引擎中心</h2>
+                <p style="color: #888; font-size: 14px;">管理和配置第三方大模型服务接口</p>
+            </div>
+        </div>
+        <button class="layui-btn layui-btn-normal layui-btn-radius" id="btnAddEngine" style="box-shadow: 0 4px 10px rgba(24,144,255,0.3);">
+            <i class="layui-icon layui-icon-add-1"></i> 新增引擎
+        </button>
+    </div>
+
+    <!-- Engine List (Grid Layout) -->
+    <div class="layui-row layui-col-space25" id="engineList">
+        <!-- Dynamic Content -->
+    </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div id="engineModal" style="display: none;">
+    <div style="padding: 30px 40px 20px;">
+        <form class="layui-form" lay-filter="engineForm">
+            <input type="hidden" name="id">
+            
+            <div class="layui-form-item">
+                <label class="layui-form-label" style="width: 80px; padding-left: 0; text-align: left; font-weight: 500;">服务商</label>
+                <div class="layui-input-block" style="margin-left: 80px;">
+                    <input type="text" name="provider_name" required lay-verify="required" placeholder="例如: OpenAI, DeepSeek" autocomplete="off" class="layui-input form-input-style">
+                </div>
+            </div>
+            
+            <div class="layui-form-item">
+                <label class="layui-form-label" style="width: 80px; padding-left: 0; text-align: left; font-weight: 500;">模型名称</label>
+                <div class="layui-input-block" style="margin-left: 80px;">
+                    <input type="text" name="model_name" required lay-verify="required" placeholder="例如: gpt-4o, deepseek-chat" autocomplete="off" class="layui-input form-input-style">
+                </div>
+            </div>
+            
+            <div class="layui-form-item">
+                <label class="layui-form-label" style="width: 80px; padding-left: 0; text-align: left; font-weight: 500;">API URL</label>
+                <div class="layui-input-block" style="margin-left: 80px;">
+                    <input type="text" name="api_url" required lay-verify="required" placeholder="API 接口地址" autocomplete="off" class="layui-input form-input-style">
+                </div>
+            </div>
+            
+            <div class="layui-form-item">
+                <label class="layui-form-label" style="width: 80px; padding-left: 0; text-align: left; font-weight: 500;">API Key</label>
+                <div class="layui-input-block" style="margin-left: 80px;">
+                    <input type="password" name="api_key" placeholder="输入密钥 (修改时留空则不更新)" autocomplete="off" class="layui-input form-input-style">
+                </div>
+            </div>
+            
+            <div class="layui-form-item">
+                <label class="layui-form-label" style="width: 80px; padding-left: 0; text-align: left; font-weight: 500;">状态</label>
+                <div class="layui-input-block" style="margin-left: 80px;">
+                    <input type="checkbox" name="is_active" lay-skin="switch" lay-text="启用|停用" checked lay-filter="statusSwitch">
+                </div>
+            </div>
+            
+            <div class="layui-form-item" style="margin-top: 30px; text-align: right;">
+                <button type="button" class="layui-btn layui-btn-primary layui-border-blue" id="btnTestConn" style="margin-right: 10px;">测试连接</button>
+                <button class="layui-btn layui-btn-normal" lay-submit lay-filter="saveEngine" style="width: 100px;">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Chat Test Modal -->
+<div id="chatModal" style="display: none;">
+    <div class="chat-container">
+        <div class="chat-history" id="chatHistory">
+            <div class="chat-message system">
+                <div class="message-content">
+                    请开始对话测试，发送消息以验证模型响应。
+                </div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <textarea id="chatInput" class="layui-textarea" placeholder="输入消息..." rows="3"></textarea>
+            <div class="chat-actions">
+                <button class="layui-btn layui-btn-normal layui-btn-sm" id="btnSendChat">
+                    <i class="layui-icon layui-icon-release"></i> 发送
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template for Engine Card -->
+<script type="text/html" id="cardTpl">
+    {% raw %}
+    {{# layui.each(d.list, function(index, item){ }}
+    <div class="layui-col-md4 layui-col-sm6">
+        <div class="engine-card">
+            <div class="card-status {{ item.is_active ? 'active' : 'inactive' }}"></div>
+            <div class="card-header">
+                <div class="provider-logo">{{ item.provider_name.charAt(0).toUpperCase() }}</div>
+                <div class="provider-info">
+                    <h3>{{ item.provider_name }}</h3>
+                    <span class="model-tag">{{ item.model_name }}</span>
+                </div>
+                <div class="card-actions">
+                    <div class="layui-btn-group">
+                        <button class="layui-btn layui-btn-xs layui-btn-primary btn-chat" data-id="{{ item.id }}" title="对话测试"><i class="layui-icon layui-icon-dialogue"></i></button>
+                        <button class="layui-btn layui-btn-xs layui-btn-primary btn-edit" data-id="{{ item.id }}" title="编辑"><i class="layui-icon layui-icon-edit"></i></button>
+                        <button class="layui-btn layui-btn-xs layui-btn-primary btn-del" data-id="{{ item.id }}" title="删除" style="color: #ff4d4f;"><i class="layui-icon layui-icon-delete"></i></button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <div class="info-row">
+                    <i class="layui-icon layui-icon-link"></i>
+                    <span class="layui-elip" title="{{ item.api_url }}">{{ item.api_url }}</span>
+                </div>
+                <div class="info-row">
+                    <i class="layui-icon layui-icon-password"></i>
+                    <span style="font-family: monospace;">{{ item.api_key }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{# }); }}
+    {{# if(d.list.length === 0){ }}
+    <div class="layui-col-md12" style="text-align: center; padding: 80px 0;">
+        <div style="background: #fff; width: 100px; height: 100px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05);">
+            <i class="layui-icon layui-icon-engine" style="font-size: 48px; color: #ddd;"></i>
+        </div>
+        <h3 style="color: #999; font-weight: normal;">暂无配置的 AI 引擎</h3>
+        <p style="color: #bbb; margin-top: 10px; font-size: 13px;">点击右上角按钮添加您的第一个大模型服务</p>
+    </div>
+    {{# } }}
+    {% endraw %}
+</script>
+
+<style>
+    /* Chat Styles */
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 500px;
+        background: #f5f7f9;
+    }
+    
+    .chat-history {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .chat-message {
+        max-width: 80%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .chat-message.user {
+        align-self: flex-end;
+        align-items: flex-end;
+    }
+    
+    .chat-message.ai {
+        align-self: flex-start;
+        align-items: flex-start;
+    }
+    
+    .chat-message.system {
+        align-self: center;
+        max-width: 90%;
+        align-items: center;
+    }
+    
+    .message-content {
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1.5;
+        position: relative;
+        word-break: break-word;
+    }
+    
+    .chat-message.user .message-content {
+        background: #1890ff;
+        color: #fff;
+        border-bottom-right-radius: 2px;
+    }
+    
+    .chat-message.ai .message-content {
+        background: #fff;
+        color: #333;
+        border: 1px solid #e6e6e6;
+        border-bottom-left-radius: 2px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .chat-message.system .message-content {
+        background: rgba(0,0,0,0.05);
+        color: #999;
+        font-size: 12px;
+        padding: 5px 12px;
+        border-radius: 20px;
+    }
+    
+    .chat-input-area {
+        background: #fff;
+        padding: 15px;
+        border-top: 1px solid #e6e6e6;
+    }
+    
+    .chat-input-area textarea {
+        resize: none;
+        border: 1px solid #e6e6e6;
+        margin-bottom: 10px;
+    }
+    
+    .chat-input-area textarea:focus {
+        border-color: #1890ff;
+    }
+    
+    .chat-actions {
+        text-align: right;
+    }
+
+    /* Minimalist & Elegant Styles */
+    body {
+        background-color: #f7f9fc;
+    }
+    
+    .engine-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+        border: 1px solid rgba(0,0,0,0.02);
+    }
+    
+    .engine-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+    }
+    
+    .card-status {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 4px;
+    }
+    
+    .card-status.active { background: #52c41a; }
+    .card-status.inactive { background: #d9d9d9; }
+    
+    .card-header {
+        padding: 20px 20px 15px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+    
+    .provider-logo {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #3a8ee6, #1890ff);
+        color: #fff;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+        margin-right: 15px;
+        box-shadow: 0 4px 10px rgba(24,144,255,0.2);
+    }
+    
+    .provider-info {
+        flex: 1;
+        overflow: hidden;
+    }
+    
+    .provider-info h3 {
+        margin: 0 0 5px;
+        font-size: 16px;
+        color: #333;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .model-tag {
+        display: inline-block;
+        padding: 2px 8px;
+        background: #f0f5ff;
+        color: #1890ff;
+        border-radius: 4px;
+        font-size: 12px;
+        border: 1px solid #d6e4ff;
+    }
+    
+    .card-actions {
+        margin-left: 10px;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    
+    .engine-card:hover .card-actions {
+        opacity: 1;
+    }
+    
+    .card-body {
+        padding: 0 20px 20px;
+        margin-top: 5px;
+    }
+    
+    .info-row {
+        display: flex;
+        align-items: center;
+        margin-top: 8px;
+        color: #888;
+        font-size: 13px;
+    }
+    
+    .info-row i {
+        margin-right: 8px;
+        font-size: 14px;
+        color: #ccc;
+    }
+    
+    /* Form Styles */
+    .form-input-style {
+        border-radius: 4px;
+        border-color: #e6e6e6;
+        height: 38px;
+    }
+    
+    .form-input-style:focus {
+        border-color: #1890ff !important;
+        box-shadow: 0 0 0 2px rgba(24,144,255,0.1);
+    }
+    
+    .layui-layer-page .layui-layer-title {
+        background: #fff;
+        border-bottom: 1px solid #f0f0f0;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+layui.use(['layer', 'form', 'laytpl', 'jquery'], function(){
+    var layer = layui.layer;
+    var form = layui.form;
+    var laytpl = layui.laytpl;
+    var $ = layui.jquery;
+    
+    var engines = [];
+    var currentEngineId = null;
+    var chatHistory = [];
+    
+    // Load Data
+    function loadEngines(){
+        var loading = layer.load(2, {shade: [0.05, '#fff']});
+        $.ajax({
+            url: "{{ url_for('ai.list_engines') }}",
+            type: "GET",
+            dataType: "json",
+            success: function(res){
+                if(res.code === 0){
+                    engines = res.data;
+                    var getTpl = document.getElementById('cardTpl').innerHTML;
+                    var view = document.getElementById('engineList');
+                    laytpl(getTpl).render({list: engines}, function(html){
+                        view.innerHTML = html;
+                    });
+                } else {
+                    layer.msg('加载失败: ' + res.msg, {icon: 2});
+                }
+            },
+            error: function(xhr, status, error){
+                console.error("Load failed:", error);
+                layer.msg('数据加载异常: ' + (xhr.responseJSON ? xhr.responseJSON.msg : '服务器错误'), {icon: 2});
+            },
+            complete: function(){
+                layer.close(loading);
+            }
+        });
+    }
+    
+    loadEngines();
+    
+    // Chat Button
+    $(document).on('click', '.btn-chat', function(){
+        var id = $(this).data('id');
+        var item = engines.find(e => e.id == id);
+        if(item){
+            currentEngineId = id;
+            chatHistory = []; // Reset history for new session
+            
+            // Reset UI
+            $('#chatHistory').html('<div class="chat-message system"><div class="message-content">正在使用 ' + item.provider_name + ' (' + item.model_name + ') 进行对话测试。</div></div>');
+            $('#chatInput').val('');
+            
+            layer.open({
+                type: 1,
+                title: '对话测试 - ' + item.provider_name,
+                area: ['600px', '600px'],
+                content: $('#chatModal'),
+                shadeClose: true,
+                skin: 'layui-layer-rim'
+            });
+        }
+    });
+    
+    // Send Chat Message
+    $('#btnSendChat').on('click', function(){
+        var content = $('#chatInput').val().trim();
+        if(!content) return;
+        
+        // Add user message
+        appendMessage('user', content);
+        $('#chatInput').val('');
+        
+        // Add to history logic
+        chatHistory.push({"role": "user", "content": content});
+        
+        // Show loading
+        var loadingId = layer.load(1, {shade: [0.1, '#fff']});
+        
+        $.ajax({
+            url: "{{ url_for('ai.chat_test') }}",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+                engine_id: currentEngineId,
+                messages: chatHistory
+            }),
+            success: function(res){
+                layer.close(loadingId);
+                if(res.code === 0){
+                    var aiContent = res.data.content;
+                    appendMessage('ai', aiContent);
+                    chatHistory.push({"role": "assistant", "content": aiContent});
+                } else {
+                    layer.msg(res.msg, {icon: 2});
+                    appendMessage('system', '错误: ' + res.msg);
+                }
+            },
+            error: function(){
+                layer.close(loadingId);
+                layer.msg('请求失败', {icon: 2});
+                appendMessage('system', '网络请求异常');
+            }
+        });
+    });
+    
+    function appendMessage(role, content){
+        var html = '<div class="chat-message ' + role + '"><div class="message-content">' + 
+                   (role === 'ai' ? escapeHtml(content).replace(/\n/g, '<br>') : escapeHtml(content)) + 
+                   '</div></div>';
+        $('#chatHistory').append(html);
+        
+        // Scroll to bottom
+        var historyDiv = document.getElementById('chatHistory');
+        historyDiv.scrollTop = historyDiv.scrollHeight;
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return text;
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    // Add Button
+    $('#btnAddEngine').on('click', function(){
+        form.val('engineForm', {
+            "id": "",
+            "provider_name": "",
+            "api_url": "https://api.openai.com/v1",
+            "api_key": "",
+            "model_name": "gpt-3.5-turbo",
+            "is_active": true
+        });
+        openModal('新增引擎配置');
+    });
+    
+    // Edit Button
+    $(document).on('click', '.btn-edit', function(){
+        var id = $(this).data('id');
+        var item = engines.find(e => e.id == id);
+        if(item){
+            form.val('engineForm', {
+                "id": item.id,
+                "provider_name": item.provider_name,
+                "api_url": item.api_url,
+                "api_key": "",
+                "model_name": item.model_name,
+                "is_active": item.is_active
+            });
+            openModal('编辑引擎配置');
+        }
+    });
+    
+    // Delete Button
+    $(document).on('click', '.btn-del', function(){
+        var id = $(this).data('id');
+        layer.confirm('确定要移除该 AI 引擎配置吗？', {
+            icon: 3, 
+            title: '删除确认',
+            btn: ['确定', '取消']
+        }, function(index){
+            $.ajax({
+                url: "{{ url_for('ai.delete_engine') }}",
+                type: "DELETE",
+                contentType: "application/json",
+                data: JSON.stringify({ids: [id]}),
+                success: function(res){
+                    if(res.code === 0){
+                        layer.msg('删除成功', {icon: 1, time: 1500});
+                        loadEngines();
+                    } else {
+                        layer.msg(res.msg, {icon: 2});
+                    }
+                }
+            });
+            layer.close(index);
+        });
+    });
+    
+    // Test Connection
+    $('#btnTestConn').on('click', function(){
+        var data = form.val('engineForm');
+        
+        // Basic validation
+        if(!data.api_url) { layer.tips('请输入 API 地址', 'input[name=api_url]'); return; }
+        if(!data.model_name) { layer.tips('请输入模型名称', 'input[name=model_name]'); return; }
+        if(!data.id && !data.api_key) { layer.tips('测试连接需要 API Key', 'input[name=api_key]'); return; }
+        if(data.id && !data.api_key) { 
+             layer.msg('测试连接需要输入 API Key', {icon: 0});
+             return;
+        }
+
+        var loading = layer.msg('正在测试连接...', {icon: 16, shade: 0.1, time: 10000});
+        $.ajax({
+            url: "{{ url_for('ai.test_engine') }}",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            success: function(res){
+                layer.close(loading);
+                if(res.code === 0){
+                    layer.msg('连接成功！配置有效', {icon: 1});
+                } else {
+                    layer.alert(res.msg, {icon: 2, title: "连接测试失败", shadeClose: true});
+                }
+            },
+            error: function(){
+                layer.close(loading);
+                layer.msg('网络请求异常', {icon: 2});
+            }
+        });
+    });
+    
+    // Submit Form
+    form.on('submit(saveEngine)', function(data){
+        var field = data.field;
+        field.is_active = (field.is_active === 'on');
+        
+        var url = field.id ? "{{ url_for('ai.update_engine') }}" : "{{ url_for('ai.create_engine') }}";
+        var type = field.id ? "PUT" : "POST";
+        
+        var loading = layer.load(1);
+        $.ajax({
+            url: url,
+            type: type,
+            contentType: "application/json",
+            data: JSON.stringify(field),
+            success: function(res){
+                layer.close(loading);
+                if(res.code === 0){
+                    layer.closeAll('page');
+                    layer.msg('保存成功', {icon: 1, time: 1000});
+                    loadEngines();
+                } else {
+                    layer.msg(res.msg, {icon: 2});
+                }
+            },
+            error: function(){
+                layer.close(loading);
+                layer.msg('保存失败，请重试', {icon: 2});
+            }
+        });
+        return false;
+    });
+    
+    function openModal(title){
+        layer.open({
+            type: 1,
+            title: title,
+            area: ['550px', 'auto'],
+            offset: '100px',
+            content: $('#engineModal'),
+            shadeClose: true,
+            skin: 'layui-layer-rim', // 加上边框
+            success: function(){
+                // Re-render form elements like switch
+                form.render();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<!-- 普通新闻详情模板 -->
+<html>
+<head lang="en">
+    <head>
+	<meta charset="UTF-8">
+	<meta name=”renderer” content=”webkit” />
+    <meta name="keywords" content="四川,四川省,成都,四川旅游,成都旅游,四川在线,四川卫视,四川新闻,新闻发布会,四川政务,排行榜,发改委,教育,医疗,食品,安全" />
+    <meta name="description" content="四川发布·全媒体新闻发布网站（www.scpublic.cn），全省唯一，全国首创。集信息发布、政务服务、舆情引导三位一体，联动全省各级各部门既有政府信息公开系统、政务微博，囊括了线下和线上两大平台，聚合传统媒体和新兴媒体不同介质，以新媒体手段真正实现全域、全天候、全媒体新闻发布网站。" />
+	<!-- 网站新闻走webtitle字段，如果为空使用title字段-->
+    <script src="/js/print-webtitle.js"></script><!-- 网站新闻走webtitle字段，如果为空使用title字段-->
+	<title>            施小琳主持召开省政府常务会议，传达学习习近平总书记重要指示精神，研究贯彻落实省委十二届八次全会精神举措等工作
+</title>
+	<link rel="stylesheet" type="text/css" href="/css/base.css">
+	<link rel="stylesheet" type="text/css" href="/css/common.css">
+	<link rel="stylesheet" type="text/css" href="/css/alert.css">
+	<link rel="stylesheet" type="text/css" href="/css/video-js.css">
+	<link rel="stylesheet" href="/css/index.css?v=1.3"/>
+
+	<script src="/js/jquery-3.4.1.min.js"></script>
+	<script src="/js/yxMobileSlider.js"></script>
+	<script src="/js/laypage.js"></script>
+	<script src="/js/core.js"></script>
+	<script src="/ckplayer/ckplayer.js" charset="utf-8"></script>
+	<script src="/videojs/video.min.js" charset="utf-8"></script>
+	<script src="/videojs/videojs-contrib-hls.min.js" charset="utf-8"></script>
+    <script src="../js/jquery.SuperSlide.2.1.3.js"></script>
+    <script src="/js/jquery.dotdotdot.min.js"></script>
+    <script src="/js/jquery.validate.min.js"></script>
+    <script src="/js/messages_zh.js"></script>
+	<link rel="shortcut icon" href="favicon.ico" type="image/vnd.microsoft.icon" />
+	 
+
+	<meta name="MobileOptimized" content="width">
+	<meta name="HandheldFriendly" content="true">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="white">
+	<meta http-equiv="cleartype" content="on">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+</head>
+<!--head标签 js和样式引用 -->
+	<style type="text/css">
+	.video-js{
+		background-color:transparent;
+	}
+		.video-js .vjs-modal-dialog{
+			display:none;
+		}
+		.vjs-poster{
+			background-size:100% 100%;
+		}
+	</style>
+</head>
+<body>
+<script>
+    </script><!-- h5新闻跳转-->
+<div class="header" style="background:#ffffff;height:80px;width: 1200px;margin: 0 auto;position: relative;overflow: initial">
+<!-- 弹出框 -->
+<div class="weui_dialog_alert" id="dialog2" style="display: none;">
+    <div class="weui_mask"></div>
+    <div class="weui_dialog">
+        <div class="weui_dialog_hd"><strong class="weui_dialog_title">提示信息</strong></div>
+        <div class="weui_dialog_bd">弹窗内容，告知当前页面信息等</div>
+        <div class="weui_dialog_ft">
+            <a href="javascript:;" class="weui_btn_dialog primary">确定</a>
+        </div>
+    </div>
+</div>
+
+	<div class="container">
+		<p class="lt">
+			<img  src="/img/logo.png" width="150"/>
+		</p>
+		<!-- <p class="inputbox">
+			<input class="search" type="text" id="search_word" value="" placeholder="请输入关键字"/><b class="search_btn" onclick="searchnews()"></b>
+		</p> -->
+		<div class="rt login" style="margin: 0">
+			<a href="javascript:;" class="login_states" id="nologin">登录</a>
+			<a href="javascript:;" class="reg_states" id="registerit">注册</a>
+			<span class="login_suc" id="loginsuc">
+				<span id="loginmobile"></span>欢迎回来！
+				<a href="javascript:;" onclick="loginout()" class="login_out" >退出</a>
+			</span>
+			<div class="login_box t_c">
+				<a href="#" onclick="exitform()"><img  style="position:relative;left:165px;width:28px" src="/img/exit.png"/></a></br>
+				<img  class="mb30" src="/img/logo.png" width="150"/><br>
+				<input type="text" name="mobile" id="mobile" autocomplete="off" value="" placeholder="手机号"><br>
+				<input type=text name="password" id="password" autocomplete="off" onfocus="this.type='password'" placeholder="密码"><br>
+				<div style="position:absolute;">
+					<input type="checkbox" name="rem_login" id="rem_login" checked=true style="position:relative; left:-100px; height:20px;width:20px"><span style="position:relative; left:-90px;font-size:14px;color:#CCCCCC">下次自动登录</span>
+					<input type="button" name="user" class="login_btn" style="position:relative;" onclick="gotologin()" value="登录">
+				</div>
+				<p style="color:red" id="loginerrorinfo"></p>
+				<script type="text/javascript">
+				function gotologin() {
+					window.load = function(){
+						document.getElementById('password').value='';
+					};
+					var mobile=$("#mobile").val();
+					var password=$("#password").val();
+					var rem_login;
+					if($("#rem_login").attr("checked")){
+						rem_login = 1;
+					}
+				 	$.post("/user/login",{mobile:mobile,password:password,rem_login:rem_login},
+					function(data){
+				 		 if(data.errorinfo==null){
+				 			window.location.reload();
+				 		 }else{
+				 			document.getElementById('password').value='';
+				 			$('#loginerrorinfo').text(data.errorinfo);
+				 		 }
+					},"json");
+				}
+				</script>
+			</div>
+
+			<div class="reg_box t_c">
+				<a href="#" onclick="exitform()"><img  style="position:relative;left:165px;width:28px" src="/img/exit.png"/></a></br>
+				<img  class="mb30" src="/img/logo.png" width="150"/><br>
+				<input type="text" name="mobile" id="mobile_reg" value="" placeholder="请输入手机号"><br>
+				<input type="text" name="valiCode" id="valiCode_reg" value="" placeholder="请输入图片上的验证码">
+		 	    <span class="YZM" >
+		            	<a href="javascript:refurbishImgCode()"><img border="0" id="picrandcode"  src="/getvm?sign=1100010000100110001000101110110010000001" width="90" height="30" alt=""></a>
+		        </span>
+				<br>
+				<input type="text" name="code" autocomplete="off" id="code_reg" placeholder="请输入短信验证码"><span class="send_msg" onclick="sendcode()">发送验证码</span><br>
+
+				<input type='text' style="display:none">
+				<input type="password" name="password" autocomplete="off" id="password_reg" placeholder="请输入密码"><br>
+				<input type="password" name="repassword" id="repassword_reg" autocomplete="off" placeholder="请再次输入密码"><br>
+				<input type="checkbox" name="agree" id="agree_reg" onclick="agree()" style="height:20px;width:20px"><a style="font-size:14px;color:#CCCCCC" href="#">已经阅读并同意《四川发布》用户使用协议</a>
+				<input type="button" class="login_btn" style="background:#D1D1D1" disabled="disabled" onclick="gotoreg()" value="完成注册">
+				<p style="color:red;line-height: 50px;" id="regerrorinfo"></p>
+				<script type="text/javascript">
+				function gotoreg() {
+					var mobile=$("#mobile_reg").val();
+					var code=$("#code_reg").val();
+					var agree=$("#agree_reg").attr("checked")=='checked'?1:0;
+					var repassword=$("#repassword_reg").val();
+					var password=$("#password_reg").val();
+				 	$.post("/register",{mobile:mobile,code:code,agree:agree,repassword:repassword,password:password},
+					function(data){
+				 		 if(data.errorinfo==null){
+				 			exitform();
+				 			$("#mobile").val(data.object.mobile);
+							$("#password").val(data.object.userpass);
+				 			showPop("注册成功!",true,function(){
+				 				gotologin();
+				 			})
+				 		 }else{
+				 			$('#regerrorinfo').text(data.errorinfo);
+				 		 }
+					},"json");
+				}
+
+				function sendcode() {
+				if($("#valiCode_reg").val()==null||$("#valiCode_reg").val()==undefined||$("#valiCode_reg").val()==""){
+				    alert("请输入图片验证码！");
+				    return;
+				}
+					$.post("/send/sms",{mobile:$("#mobile_reg").val(),valiCode:$("#valiCode_reg").val()},
+						function(data){
+					 		 if(data.errorinfo!=null){
+					 			$('#regerrorinfo').text(data.errorinfo);
+					 		 }else{
+					 			$(".send_msg").text("已发送")
+								$('.send_msg').css('background','#D1D1D1')
+								$(".send_msg").attr("onclick","");
+					 		 }
+					},"json");
+				}
+
+				function refurbishImgCode() {
+                     var sign="";
+                     for(var i=0;i<40;i++){
+                        sign = sign + Math.round(Math.random());
+                     };
+                   document.getElementById('picrandcode').src ='/getvm?sign='+sign;
+                 }
+
+				//点击接受协议
+				function agree(){
+					if($("#agree_reg").attr("checked")!='checked'){
+						$('.login_btn').css('background','#D1D1D1');
+						$(".login_btn").attr("disabled","disabled");
+					}else{
+						$('.login_btn').css('background','#E40112');
+						$(".login_btn").removeAttr("disabled");
+					}
+				}
+				</script>
+			</div>
+		</div>
+		<p class="rt">
+			<a href="/android" target="_blank"><img src="/img/andriod.png" width="140px"/></a>
+			<a href="/iphone" target="_blank"><img src="/img/iphone.png" width="140px" /></a>
+		</p>
+		<p class="lt" style="font-size:18px;position:absolute;top:34px">主办单位：四川省人民政府新闻办公室 四川省互联网信息办公室</p>
+	</div>
+	<script type="text/javascript">
+	$(function(){
+		var name=getCookie('mobile');
+		if(name!=null&&name!=""&&name.length>10){
+			$("#loginmobile").text(name);
+			$("#loginsuc").show();
+			$("#nologin").hide();
+			$("#registerit").hide();
+		}else{
+			$("#loginsuc").hide();
+			$("#nologin").show();
+			$("#registerit").show();
+		}
+	});
+
+	//退出
+	function loginout() {
+		$.post("/user/logout",{},
+				function(data){
+			 		window.location.reload();
+		},"json");
+	}
+
+	//按名称获取cookie
+	function getCookie(c_name) {
+		if (document.cookie.length > 0) {
+			c_start = document.cookie.indexOf(c_name + "=")
+			if (c_start != -1) {
+				c_start = c_start + c_name.length + 1
+				c_end = document.cookie.indexOf(";", c_start)
+				if (c_end == -1)
+					c_end = document.cookie.length
+				return unescape(document.cookie.substring(c_start, c_end))
+			}
+		}
+		return null
+	}
+	//alert框
+	function showPop(vaules,ishide,callback){
+        $(".weui_dialog_bd").html(vaules);
+        var $dialog = $('#dialog2');
+        $dialog.show();
+        if(ishide){
+            $dialog.find('.weui_btn_dialog').on('click', function () {
+                $dialog.hide();
+                if(callback!=undefined)
+                callback();
+            });
+        }
+    }
+	//关闭登录注册框
+	function exitform() {
+		$(".login_box").hide();
+		$(".reg_box").hide();
+		$(".cover").hide();
+	}
+
+	//搜索新闻
+	function searchnews() {
+		window.location.href="/news/search?keyword="+$("#search_word").val();
+	}
+	function loginBoxShow(){
+		$(".login_box").show();
+		$(".cover").show();
+	}
+	</script>
+</div>
+<div style="clear: both;"></div>
+<div class="header-r-now">
+    <span class="header-r-time"></span>
+    <span class="header-r-week"></span>
+    <iframe allowtransparency="true" frameborder="0" width="180" height="36" scrolling="no" src="//tianqi.2345.com/plugin/widget/index.htm?s=3&z=2&t=0&v=0&d=2&bd=0&k=000000&f=&q=0&e=1&a=1&c=56294&w=180&h=36&align=center"></iframe>
+    <a href="http://weibo.com/sichuantianfu" class="index-wb" target="_blank">
+        <img src="/img/weixin-weibo/weibo-color.png" alt="">
+    </a>
+    <div class="index-wxqr">
+        <img src="/img/weixin-weibo/weixin-color.png" alt="">
+        <div class="index-qr">
+            <span></span>
+			<p>扫描二维码</p>
+			<img src="/img/weixin-weibo/wxQR.png" alt="">
+			<label>关注四川发布</label>
+		</div>
+	</div>
+	<a href="http://appweb.scpublic.cn/news/wx/detail?newsid=73535&time=1506586777413" class="index-administer" target="_blank">自律管理承诺</a>
+<a href="http://www.piyao.org.cn/yybgt/index.htm" class="index-administer" target="_blank">网络谣言曝光台</a>
+</div>
+<!-- 顶部登录 -->
+<div class="nav">
+    <ul>
+        <li id="nav_index"><a href="/news/homePageInitTop">首页</a></li>
+        <li id="nav_allMedia"><a href="/news/getAllMedia">全媒体发布</a></li>
+        <li id="nav_standing"><a href="/news/releaseChannel?sectionid=14">常务会</a></li>
+        <li id="nav_release"><a href="/news/releaseChannel?sectionid=15">发布会</a></li>
+        <li id="nav_department"><a href="/news/provincialDepartment">省直部门</a></li>
+        <li id="nav_city"><a id="city_head" href="/news/cityState">市州</a></li>
+        <li id="nav_plotical"><a href="/news/releaseChannel?sectionid=13">政务</a></li>
+        <li id="nav_people"><a href="/news/releaseChannel?sectionid=106">民生</a></li>
+        <li id="nav_education"><a href="/news/releaseChannel?sectionid=645">教育</a></li>
+        <li id="nav_answers"><a href="/question/getQuestions">咨询应答</a></li>
+                <li id="nav_ranking"><a href="/news/rankingMore">排行榜</a></li>
+    </ul>
+</div><!-- 顶部导航 -->  
+<div class="release-content">
+    <div class="release-l">      
+	<div class="article_main mb20">
+		<div class="title mb10">            施小琳主持召开省政府常务会议，传达学习习近平总书记重要指示精神，研究贯彻落实省委十二届八次全会精神举措等工作
+</div>
+		<div class="info gray mb10">
+			<span class="time">
+					2025-12-01 17:07:50
+			</span>&nbsp;&nbsp;
+				<span class="times">川观新闻</span>		
+		</div>
+		<div class="article">
+				<p><p style="text-align: center;"><span style="color:#c0392b;"><strong>施小琳主持召开省政府常务会议</strong></span></p>
+
+<p style="text-align: center;"><span style="color:#c0392b;"><strong>传达学习习近平总书记重要指示精神</strong></span></p>
+
+<p style="text-align: center;"><span style="color:#c0392b;"><strong>研究贯彻落实省委十二届八次全会精神举措等工作</strong></span></p>
+
+<p>12月1日，省委副书记、省长施小琳主持召开省政府第60次常务会议，传达学习习近平总书记近期重要指示精神，研究贯彻落实省委十二届八次全会精神举措等工作。</p>
+
+<p>会议强调，要深入学习贯彻习近平总书记对香港新界大埔区住宅楼重大火灾事故作出的重要指示精神，认真落实国务院安委会部署开展的高层建筑重大火灾风险隐患排查整治行动，结合推动中央安全生产考核巡查组反馈问题整改，深刻汲取教训，保持高度警醒，压紧压实各方责任，举一反三、全面加强高层建筑消防安全管理，并与电动自行车、建筑保温材料、人员密集场所动火作业、城镇燃气等“一件事”全链条整治有机结合，推广“蜀安焊”等有效做法，切实把风险隐患找出来、管起来、改到位，提升群众消防安全意识和应急自救能力，坚决防范遏制重特大事故发生，全力保障人民群众生命财产安全。</p>
+
+<p>会议强调，要深入学习领会省委十二届八次全会精神，与学习贯彻党的二十届四中全会和习近平总书记对四川工作系列重要指示精神贯通起来，深刻理解“十五五”时期是基本实现社会主义现代化夯实基础、全面发力的关键时期，也是四川塑造发展新动能、形成竞争新优势的重要窗口期，准确把握未来五年发展的总体要求、战略使命、主要目标和重点任务，扎实做好宣讲解读工作，汇聚起奋进新征程的强大力量。要高质量编制“十五五”规划纲要，加强与国家规划纲要衔接，对标对表省委规划建议，全面贯彻“六个坚持”重大原则，切实做到“四个必须”，以推动高质量发展为主题，树牢正确政绩观，科学提出经济发展、创新驱动、民生福祉、绿色生态、安全保障等方面具体目标，广泛听取各方意见建议，集思广益、凝聚共识，研究完善重点任务实施路径，聚焦形成“极核引领、次级支撑、竞相发展、片区协同”的五区共兴发展格局、推动科技创新和产业创新深度融合、根据人口变化和需求优化公共服务供给、更好统筹发展和安全等细化工作举措，做好专项规划、区域规划编制和对市州规划工作指导，切实把省委部署转化为“路线图”“施工图”。要全力抓好岁末年初工作，分行业分地区统筹抓好指标收口、政策收官、资金收闸、投资收尾等工作，着力稳就业、稳企业、稳市场、稳预期，扎实做好困难群众救助帮扶、农民工工资支付、物资能源保供等工作，守牢道路交通、安全生产、森林草原防灭火等底线，坚决完成全年目标任务，实现“十四五”顺利收官、“十五五”良好开局。</p>
+
+<p>会议审议通过《四川省非农建设补充耕地指标省级收储统筹调剂管理办法》。</p>
+
+<p>会议还研究了其他事项。（记者 李淼）</p>
+</p>
+		</div>
+	</div>
+		<div class="lt t_l mt20">
+<div class="review mb20" id="comment_zone_list">
+<input type="hidden" id="replaypage" value="1">
+<input type="hidden" id="replay_news_id" value="850087">
+<input type="hidden" id="share_news_title" value="施小琳主持召开省政府常务会议，传达学习习近平总书记重要指示精神，研究贯彻落实省委十二届八次全会精神举措等工作">
+<img id="share_news_pic" src="error.png" style="display: none" onerror="this.onerror=null;this.src='http://'+location.host+'/img/push.png'">
+
+</div>
+<script type="text/javascript">
+	$(document).ready(function(){
+		//获取评论
+		var news_id=$("#replay_news_id").val();
+		var replaypage=$("#replaypage").val();
+		$.get("/user/newreplay/list",{page:replaypage,nid:news_id}, function(data){
+			  $("#comment_zone_list").append(data);
+		});
+		
+	})
+	
+	//查看更多评论
+	function look_more() {
+		var replaypage=parseInt($("#replaypage").val());
+		replaypage+=1;
+		$("#replaypage").val(replaypage);
+		$.get("/user/newreplay/list",{page:replaypage,nid:$("#replay_news_id").val()}, function(data){
+			  $("#replay-ul").append(data);
+		});
+	}
+	
+	//点赞
+	function clickpraise(rid){
+		$.post("/user/replaypraise/save",{nid:$("#replay_news_id").val(),rid:rid},
+		function(data){
+	 		 if(data.errorinfo==null){
+	 			$("#praise_count_span_"+rid).text(parseInt($("#praise_count_span_"+rid).text())+1);
+	 		 }else{
+	 			showPop(data.errorinfo,true);
+	 		 }
+		},"json");
+	}
+	
+	//评论
+	function commentnews() {
+		var value = $("#comment_textarea").val();
+		$.post("/user/replay/save",{nid:$("#replay_news_id").val(),value:value},
+		function(data){			
+	 		 if(data.errorinfo==null){	 			
+	 			showPop("评论成功!",true,function(){
+	 				window.location.reload();
+	 			});
+	 		 }else{
+	 			showPop(data.errorinfo,true);
+	 		 }
+		},"json");
+	}
+	
+	// 点击回复展开
+	function clickreplaycomment(obj,uid,qid){
+		var str='<div class="deliver clearfix mt20">';
+		str+=	'<div class="add_deliver rt">';
+		str+=		'<textarea placeholder="请输入评论" id="replaycomment_textarea"></textarea>';
+		str+=	'</div>';
+		str+=	'<div class="submit"><span class="submit_btn" onclick="replaycomment(\''+uid+'\',\''+qid+'\')">发布</span></div>';
+		str+='</div>';
+		if(!$(obj).parent().next().hasClass("deliver")){
+			$(".review-list .deliver").remove();
+			$(obj).parent().after(str);
+		}
+	}
+	
+	//回复评论
+	function replaycomment(uid,qid){
+		var value = $("#replaycomment_textarea").val();
+		$.post("/user/replay/save",{nid:$("#replay_news_id").val(),value:value,quoteid:qid},
+		function(data){
+	 		 if(data.errorinfo==null){
+	 			showPop("回复成功!",true,function(){
+	 				window.location.reload();
+	 			});
+	 		 }else{
+	 			showPop(data.errorinfo,true);
+	 		 }
+		},"json");
+	}
+</script>			<div class="recommend">	

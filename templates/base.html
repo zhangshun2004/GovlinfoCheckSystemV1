@@ -103,8 +103,11 @@
                     <a href="javascript:;"><i class="layui-icon layui-icon-app" style="margin-right: 10px;"></i>功能菜单</a>
                     <dl class="layui-nav-child">
                         <dd><a href="{{ url_for('main.index') }}">工作台</a></dd>
+                        <dd><a href="{{ url_for('crawler.search_page') }}">全网采集</a></dd>
                         <dd><a href="{{ url_for('crawler.manager') }}">数据采集管理</a></dd>
-                        <dd><a href="{{ url_for('crawler.search_page') }}">全网采集(旧版)</a></dd>
+                        <dd><a href="{{ url_for('crawler.rules_page') }}">采集规则库</a></dd>
+                        <dd><a href="{{ url_for('ai.manager') }}">AI 引擎管理</a></dd>
+                        <dd><a href="{{ url_for('crawler.warehouse') }}">数据仓库管理</a></dd>
                         {% if current_user.is_authenticated and current_user.role.name == 'Administrator' %}
                         <dd><a href="{{ url_for('admin.users') }}">用户管理</a></dd>
                         <dd><a href="{{ url_for('admin.settings') }}">系统设置</a></dd>

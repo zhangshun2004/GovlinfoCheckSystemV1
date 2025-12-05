@@ -1,6 +1,7 @@
 from .extensions import db, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
+from datetime import datetime
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -48,20 +49,61 @@ class SystemSetting(db.Model):
 class CollectedData(db.Model):
     __tablename__ = 'collected_data'
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(256))
+    title = db.Column(db.String(256), nullable=False)
     summary = db.Column(db.Text)
     source = db.Column(db.String(64))
     original_url = db.Column(db.String(512))
-    cover_url = db.Column(db.String(512))
-    publish_date = db.Column(db.String(64))
+    cover = db.Column(db.String(512))
+    keyword = db.Column(db.String(64))
     
-    # 深度采集字段
+    # 深度采集相关
     is_deep_collected = db.Column(db.Boolean, default=False)
-    content = db.Column(db.Text) # 完整内容
+    deep_content = db.Column(db.Text) # 存储深度采集的正文内容
+    deep_collected_at = db.Column(db.DateTime)
     
-    created_at = db.Column(db.DateTime, default=db.func.now())
-    keyword = db.Column(db.String(64)) # 来源关键词
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return f'<CollectedData {self.title}>'
 
+class CollectionRule(db.Model):
+    __tablename__ = 'collection_rules'
+    id = db.Column(db.Integer, primary_key=True)
+    site_name = db.Column(db.String(128), unique=True, nullable=False)
+    domain = db.Column(db.String(128)) # e.g., xinhuanet.com
+    title_xpath = db.Column(db.String(256))
+    content_xpath = db.Column(db.String(256))
+    headers = db.Column(db.Text) # Store as JSON string or key-value text
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<CollectionRule {self.site_name}>'
+
+class ArticleDetail(db.Model):
+    __tablename__ = 'article_details'
+    id = db.Column(db.Integer, primary_key=True)
+    collected_data_id = db.Column(db.Integer, db.ForeignKey('collected_data.id'), unique=True)
+    title = db.Column(db.String(256))
+    content = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship
+    collected_data = db.relationship('CollectedData', backref=db.backref('detail', uselist=False))
+
+    def __repr__(self):
+        return f'<ArticleDetail {self.title}>'
+
+class AIEngine(db.Model):
+    __tablename__ = 'ai_engines'
+    id = db.Column(db.Integer, primary_key=True)
+    provider_name = db.Column(db.String(128), nullable=False) # e.g. OpenAI, DeepSeek
+    api_url = db.Column(db.String(512), nullable=False)
+    api_key = db.Column(db.String(512), nullable=False)
+    model_name = db.Column(db.String(128), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<AIEngine {self.provider_name}-{self.model_name}>'

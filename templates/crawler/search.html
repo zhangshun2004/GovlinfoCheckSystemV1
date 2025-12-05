@@ -44,6 +44,7 @@
 </div>
 
 {% endblock %}
+
 {% block scripts %}
 <script>
 layui.use(['layer', 'form', 'jquery'], function(){
@@ -57,7 +58,7 @@ layui.use(['layer', 'form', 'jquery'], function(){
     });
     
     // 回车事件
-    $(document).on('keypress', '#searchInput', function(e){
+    $('#searchInput').on('keypress', function(e){
         if(e.which == 13) {
             doSearch();
         }
@@ -103,21 +104,29 @@ layui.use(['layer', 'form', 'jquery'], function(){
     }
     
     function renderResults(data) {
-        var html = '<div class="layui-flow-more">';
+        var html = '<div class="layui-row layui-col-space15">';
         data.forEach(function(item) {
-            var coverHtml = item.cover ? `<div class="layui-col-xs3 layui-col-sm2"><img src="${item.cover}" style="width: 100%; border-radius: 4px;"></div>` : '';
-            var contentClass = item.cover ? 'layui-col-xs9 layui-col-sm10' : 'layui-col-xs12';
+            var coverHtml = item.cover ? 
+                `<a href="${item.original_url}" target="_blank"><img src="${item.cover}" style="width: 100%; height: 160px; object-fit: cover; border-top-left-radius: 4px; border-top-right-radius: 4px;"></a>` : 
+                `<a href="${item.original_url}" target="_blank"><div style="width: 100%; height: 160px; background: #f0f2f5; border-top-left-radius: 4px; border-top-right-radius: 4px; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 14px;">无封面</div></a>`;
             
             html += `
-            <div class="layui-row layui-col-space15" style="border-bottom: 1px solid #f0f0f0; padding: 15px 0;">
-                ${coverHtml}
-                <div class="${contentClass}">
-                    <h3 style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">
-                        <a href="${item.original_url}" target="_blank" style="color: #1e9fff;">${item.title}</a>
-                    </h3>
-                    <p style="color: #666; font-size: 14px; line-height: 1.6; margin-bottom: 8px;">${item.summary}</p>
-                    <div style="color: #999; font-size: 12px;">
-                        <span class="layui-badge layui-bg-gray">${item.source}</span>
+            <div class="layui-col-md3 layui-col-sm6 layui-col-xs12">
+                <div class="layui-card" style="box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.3s;">
+                    <div class="layui-card-header" style="padding: 0; height: 160px; border-bottom: none;">
+                        ${coverHtml}
+                    </div>
+                    <div class="layui-card-body" style="padding: 10px 15px;">
+                        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; height: 44px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                            <a href="${item.original_url}" target="_blank" style="color: #333;">${item.title}</a>
+                        </h3>
+                        <div style="color: #999; font-size: 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                            <span class="layui-badge layui-bg-blue" style="border-radius: 2px;">${item.source}</span>
+                            <span>${item.publish_time || '未知时间'}</span>
+                        </div>
+                        <div style="margin-top: 10px; color: #666; font-size: 13px; height: 40px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.5;">
+                             ${item.summary || '暂无摘要'}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -56,6 +56,7 @@
     .layui-body {
         background-color: #f0f2f5;
         padding: 16px;
+        padding-bottom: 80px; /* 预留底部空间，避免被页脚遮挡 */
     }
     
     .layui-card {
@@ -72,6 +73,7 @@
         background-color: transparent !important;
         text-align: center;
         box-shadow: none;
+        z-index: 1;
     }
   </style>
 </head>
@@ -107,6 +109,7 @@
                         <dd><a href="{{ url_for('crawler.manager') }}">数据采集管理</a></dd>
                         <dd><a href="{{ url_for('crawler.rules_page') }}">采集规则库</a></dd>
                         <dd><a href="{{ url_for('ai.manager') }}">AI 引擎管理</a></dd>
+                        <dd><a href="{{ url_for('crawler.crawler_sources_page') }}">爬虫管理</a></dd>
                         <dd><a href="{{ url_for('crawler.warehouse') }}">数据仓库管理</a></dd>
                         {% if current_user.is_authenticated and current_user.role.name == 'Administrator' %}
                         <dd><a href="{{ url_for('admin.users') }}">用户管理</a></dd>
@@ -131,7 +134,7 @@
       {% block content %}{% endblock %}
     </div>
     
-    <div class="layui-footer" style="left: 240px;">
+    <div class="layui-footer" style="left: 240px; position: fixed; bottom: 0; right: 0; height: 50px; line-height: 50px;">
         © 2025 政企智能舆情分析报告生成智能体应用系统
     </div>
   </div>

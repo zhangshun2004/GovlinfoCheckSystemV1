@@ -77,11 +77,12 @@
 
 <!-- 操作列模板 -->
 <script type="text/html" id="toolBar">
-    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="collectDetail">详细采集</a>
-    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
-    <a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="copy">复制</a>
-    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
-    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="preview">预览</a>
+    <div class="op-btns">
+        <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="preview">预览</a>
+        <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="collectDetail">详细采集</a>
+        <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+    </div>
 </script>
 
 <!-- 深度采集状态模板 -->
@@ -200,7 +201,7 @@ layui.use(['table', 'form', 'layer', 'jquery'], function(){
             }},
             {field: 'is_deep_collected', title: '状态', width: 100, templet: '#deepStatusTpl', align: 'center'},
             {field: 'created_at', title: '采集时间', width: 170, sort: true, align: 'center', style: 'color: #999;'},
-            {title: '操作', width: 200, toolbar: '#toolBar', fixed: 'right', align: 'center'}
+            {title: '操作', width: 260, toolbar: '#toolBar', fixed: 'right', align: 'center'}
         ]],
         done: function(res, curr, count){
             // 更新统计数据
@@ -364,8 +365,9 @@ layui.use(['table', 'form', 'layer', 'jquery'], function(){
         });
     });
     
-    // 批量删除
+    // 批量删除（增强版）
     $('#btnBatchDelete').on('click', function(){
+        var $btn = $(this);
         var checkStatus = table.checkStatus('warehouseTable');
         var data = checkStatus.data;
         
@@ -376,6 +378,8 @@ layui.use(['table', 'form', 'layer', 'jquery'], function(){
         
         layer.confirm('确定要删除选中的 ' + data.length + ' 条数据吗？', function(index){
             var ids = data.map(item => item.id);
+            $btn.prop('disabled', true).addClass('layui-btn-disabled');
+            var loading = layer.load(1, {shade: [0.1,'#fff']});
             
             $.ajax({
                 url: "{{ url_for('crawler.warehouse_delete_api') }}",
@@ -383,12 +387,19 @@ layui.use(['table', 'form', 'layer', 'jquery'], function(){
                 contentType: 'application/json',
                 data: JSON.stringify({ ids: ids }),
                 success: function(res){
+                    layer.close(loading);
+                    $btn.prop('disabled', false).removeClass('layui-btn-disabled');
                     if(res.code === 0){
-                        layer.msg(res.msg);
-                        tableIns.reload();
+                        layer.msg(res.msg, {icon: 1});
+                        tableIns.reload({page:{curr:1}});
                     } else {
-                        layer.msg('删除失败: ' + res.msg);
+                        layer.msg('删除失败: ' + res.msg, {icon: 2});
                     }
+                },
+                error: function(){
+                    layer.close(loading);
+                    $btn.prop('disabled', false).removeClass('layui-btn-disabled');
+                    layer.msg('请求失败', {icon: 2});
                 }
             });
             layer.close(index);
@@ -454,22 +465,7 @@ layui.use(['table', 'form', 'layer', 'jquery'], function(){
         });
     }
 
-    // 批量详细采集
-    $('#btnBatchCollectDetail').on('click', function(){
-        var checkStatus = table.checkStatus('warehouseTable');
-        var data = checkStatus.data;
-        
-        if(data.length === 0){
-            layer.msg('请选择要采集的数据');
-            return;
-        }
-        
-        layer.confirm('确定要对选中的 ' + data.length + ' 条数据进行详细内容采集吗？', function(index){
-            var ids = data.map(item => item.id);
-            performCollectDetail(ids);
-            layer.close(index);
-        });
-    });
+    /* 取消重复绑定的“批量详细采集”直接采集逻辑，统一走规则分析与绑定流程 */
 
     // 行工具事件
     table.on('tool(warehouseTable)', function(obj){
@@ -478,24 +474,6 @@ layui.use(['table', 'form', 'layer', 'jquery'], function(){
         if(obj.event === 'collectDetail'){
             layer.confirm('确定要对该条数据进行详细内容采集吗？', function(index){
                 performCollectDetail([data.id]);
-                layer.close(index);
-            });
-        } else if(obj.event === 'copy'){
-            layer.confirm('确定要复制该条数据吗？', function(index){
-                $.ajax({
-                    url: "{{ url_for('crawler.warehouse_copy_api') }}",
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ id: data.id }),
-                    success: function(res){
-                        if(res.code === 0){
-                            layer.msg('复制成功');
-                            tableIns.reload();
-                        } else {
-                            layer.msg('复制失败: ' + res.msg);
-                        }
-                    }
-                });
                 layer.close(index);
             });
         } else if(obj.event === 'del'){
@@ -586,4 +564,11 @@ layui.use(['table', 'form', 'layer', 'jquery'], function(){
     });
 });
 </script>
+<style>
+/* 修复表格固定列按钮可能被遮挡的问题 */
+.layui-table-fixed-r{ z-index: 999; }
+.layui-table-box{ overflow: visible; }
+.layui-table-body{ overflow: visible; }
+.op-btns{ display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+</style>
 {% endblock %}

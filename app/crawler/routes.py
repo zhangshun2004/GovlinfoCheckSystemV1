@@ -3,17 +3,23 @@ from flask import Blueprint, request, jsonify, render_template
 from flask_login import login_required
 from app.crawler.baidu import BaiduCrawler
 from app.crawler.xinhua import XinhuaCrawler
+from app.crawler.crawler import CrawlerService
 from app.models import CollectedData, CollectionRule, ArticleDetail
+from app.models import CrawlerSource
 from app.extensions import db
 from datetime import datetime
 import requests
 from lxml import html as lxml_html
+from urllib.parse import urlparse
 import urllib3
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 bp = Blueprint('crawler', __name__)
+service = CrawlerService()
 
 def _process_headers(headers_text):
     """
@@ -104,15 +110,48 @@ def _fetch_and_parse_detail(url, rule):
             pass
             
     try:
-        response = requests.get(url, headers=headers, timeout=15, verify=False)
+        headers.setdefault("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+        headers.setdefault("Accept-Language", "zh-CN,zh;q=0.9")
+        headers.setdefault("Cache-Control", "no-cache")
+        ref = None
+        try:
+            u = urlparse(url)
+            ref = f"{u.scheme}://{u.netloc}/"
+        except:
+            pass
+        if ref:
+            headers.setdefault("Referer", ref)
+        session = requests.Session()
+        retry = Retry(total=2, backoff_factor=0.5, status_forcelist=[429,500,502,503,504])
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount('https://', adapter)
+        session.mount('http://', adapter)
+        response = session.get(url, headers=headers, timeout=15, verify=False, allow_redirects=True)
         response.encoding = response.apparent_encoding
-        
-        if response.status_code != 200:
-            return None
-            
+        if response.status_code != 200 or ('wappass.baidu.com' in (response.url or '')) or ('captcha' in (response.text or '').lower()):
+            try:
+                proxy_url = 'https://r.jina.ai/http://' + url.split('://', 1)[1]
+                r2 = requests.get(proxy_url, timeout=15)
+                if r2.status_code == 200 and len(r2.text) > 50:
+                    title = ""
+                    try:
+                        t = lxml_html.fromstring(r2.text)
+                        h1s = t.xpath('//h1')
+                        if h1s:
+                            title = h1s[0].text_content().strip()
+                    except:
+                        pass
+                    content = r2.text
+                    if content:
+                        return {"title": title, "content": content}
+            except:
+                pass
+            if response.status_code != 200:
+                return None
+
         tree = lxml_html.fromstring(response.content)
-        
-        # Title
+
+        # Title with fallbacks
         title = ""
         if rule.title_xpath:
             try:
@@ -124,42 +163,70 @@ def _fetch_and_parse_detail(url, rule):
                         title = titles[0].text_content().strip()
             except:
                 pass
-        
+        if not title:
+            try:
+                h1s = tree.xpath('//h1')
+                if h1s:
+                    title = h1s[0].text_content().strip()
+            except:
+                pass
+
         # Content
         content = ""
-        
         if rule.content_xpath:
             content = _extract_content(tree, rule.content_xpath)
-            
-        # Auto-update logic (Simple Version)
-        if not content or len(content) < 50:
-            # Try fallbacks
+
+        # Stronger fallbacks
+        if not content or len(content) < 20:
             fallbacks = [
                 "//div[@class='content']",
-                "//div[@id='content']", 
+                "//div[@id='content']",
                 "//div[@class='article']",
                 "//article",
                 "//div[contains(@class, 'detail')]",
                 "//div[contains(@class, 'news_txt')]",
-                "//div[contains(@class, 'main_content')]"
+                "//div[contains(@class, 'main_content')]",
+                "//div[contains(@class, 'news-content')]",
+                "//div[contains(@class, 'article-content')]",
+                "//div[contains(@class, 'post')]",
+                "//div[contains(@class, 'txt')]",
+                "//div[contains(@class, 'text')]",
+                "//div[contains(@id, 'content')]"
             ]
-            
             for fb in fallbacks:
-                if fb == rule.content_xpath:
+                if rule.content_xpath and fb == rule.content_xpath:
                     continue
-                    
                 candidate = _extract_content(tree, fb)
-                if candidate and len(candidate) > 50:
+                if candidate and len(candidate) > 20:
                     content = candidate
-                    # Update Rule!
                     rule.content_xpath = fb
-                    # Note: We rely on the caller to commit the session
                     break
-        
+
+        # Final fallback with BeautifulSoup paragraphs
+        if not content or len(content) < 20:
+            try:
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(response.text, 'html.parser')
+                for tag in soup(["script", "style", "iframe", "noscript", "svg"]):
+                    tag.extract()
+                article = None
+                for selector in ['article', '.article', '.post', '.content', '.main-content', '.news-content', '.article-content', '#content', '.detail-content', '.txt', '.text']:
+                    article = soup.select_one(selector)
+                    if article and len(article.get_text(strip=True)) > 20:
+                        break
+                if article:
+                    content = article.get_text(separator='\n', strip=True)
+                else:
+                    paragraphs = soup.find_all('p')
+                    valid = [p.get_text(strip=True) for p in paragraphs if len(p.get_text(strip=True)) > 10]
+                    content = '\n\n'.join(valid)
+            except Exception:
+                pass
+
         if content:
             return {"title": title, "content": content}
         return None
-        
+
     except Exception as e:
         print(f"Detail collect error: {e}")
         return None
@@ -191,27 +258,7 @@ def search_api():
     if source == 'baidu' and not keyword:
         return jsonify({"code": 400, "msg": "关键字不能为空", "data": []})
     
-    results = []
-    if source == 'baidu':
-        crawler = BaiduCrawler()
-        results = crawler.search(keyword, pages=pages)
-    elif source == 'xinhua':
-        crawler = XinhuaCrawler()
-        # For Xinhua, we fetch all available news first to ensure keyword filtering works effectively
-        # The homepage usually has a limited number of items (e.g., 20-50), so this is safe.
-        all_results = crawler.fetch_news(limit=None)
-        
-        if keyword:
-            # Filter by keyword
-            results = [r for r in all_results if keyword in r['title'] or keyword in r['summary']]
-        else:
-            results = all_results
-            
-        # Apply limit to the final results
-        # Default limit is 20 if not specified
-        final_limit = limit if limit else 20
-        results = results[:final_limit]
-    
+    results = service.search(keyword, source=source, pages=pages, limit=limit)
     return jsonify({
         "code": 0,
         "msg": "success",
@@ -219,20 +266,185 @@ def search_api():
         "data": results
     })
 
+# --- Crawler Sources Management ---
+
+@bp.route('/crawler_sources')
+@login_required
+def crawler_sources_page():
+    return render_template('crawler/sources.html')
+
+@bp.route('/api/crawler_sources', methods=['GET'])
+@login_required
+def crawler_sources_list_api():
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 10, type=int)
+    query = CrawlerSource.query.order_by(CrawlerSource.created_at.desc())
+    pagination = query.paginate(page=page, per_page=limit, error_out=False)
+    data = []
+    for s in pagination.items:
+        data.append({
+            'id': s.id,
+            'name': s.name,
+            'key': s.key,
+            'module': s.module,
+            'class_name': s.class_name,
+            'base_url': s.base_url,
+            'headers': s.headers,
+            'search_url': s.search_url,
+            'search_method': s.search_method,
+            'search_params': s.search_params,
+            'search_headers': s.search_headers,
+            'result_is_json': s.result_is_json,
+            'result_item_xpath': s.result_item_xpath,
+            'field_map': s.field_map,
+            'deep_headers': s.deep_headers,
+            'enabled': s.enabled,
+            'created_at': s.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated_at': s.updated_at.strftime('%Y-%m-%d %H:%M:%S') if s.updated_at else None
+        })
+    return jsonify({'code': 0, 'msg': '', 'count': pagination.total, 'data': data})
+
+@bp.route('/api/crawler_sources', methods=['POST'])
+@login_required
+def crawler_sources_create_api():
+    data = request.json
+    required = ['name', 'key', 'module', 'class_name']
+    for f in required:
+        if not data.get(f):
+            return jsonify({'code': 400, 'msg': f'{f} 不能为空'})
+    if CrawlerSource.query.filter_by(key=data['key']).first():
+        return jsonify({'code': 400, 'msg': 'key 已存在'})
+    try:
+        src = CrawlerSource(
+            name=data['name'],
+            key=data['key'],
+            module=data['module'],
+            class_name=data['class_name'],
+            base_url=data.get('base_url'),
+            headers=_process_headers(data.get('headers')),
+            search_url=data.get('search_url'),
+            search_method=data.get('search_method') or 'GET',
+            search_params=data.get('search_params'),
+            search_headers=_process_headers(data.get('search_headers')),
+            result_is_json=bool(data.get('result_is_json')),
+            result_item_xpath=data.get('result_item_xpath'),
+            field_map=data.get('field_map'),
+            deep_headers=_process_headers(data.get('deep_headers')),
+            enabled=data.get('enabled', True)
+        )
+        db.session.add(src)
+        db.session.commit()
+        return jsonify({'code': 0, 'msg': '创建成功'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'code': 500, 'msg': f'创建失败: {str(e)}'})
+
+@bp.route('/api/crawler_sources', methods=['PUT'])
+@login_required
+def crawler_sources_update_api():
+    data = request.json
+    id = data.get('id')
+    if not id:
+        return jsonify({'code': 400, 'msg': 'ID不能为空'})
+    src = CrawlerSource.query.get(id)
+    if not src:
+        return jsonify({'code': 404, 'msg': '数据源不存在'})
+    try:
+        src.name = data.get('name', src.name)
+        src.key = data.get('key', src.key)
+        src.module = data.get('module', src.module)
+        src.class_name = data.get('class_name', src.class_name)
+        src.base_url = data.get('base_url', src.base_url)
+        if 'headers' in data:
+            src.headers = _process_headers(data.get('headers'))
+        if 'enabled' in data:
+            src.enabled = bool(data.get('enabled'))
+        if 'search_url' in data:
+            src.search_url = data.get('search_url')
+        if 'search_method' in data:
+            src.search_method = data.get('search_method') or 'GET'
+        if 'search_params' in data:
+            src.search_params = data.get('search_params')
+        if 'search_headers' in data:
+            src.search_headers = _process_headers(data.get('search_headers'))
+        if 'result_is_json' in data:
+            src.result_is_json = bool(data.get('result_is_json'))
+        if 'result_item_xpath' in data:
+            src.result_item_xpath = data.get('result_item_xpath')
+        if 'field_map' in data:
+            src.field_map = data.get('field_map')
+        if 'deep_headers' in data:
+            src.deep_headers = _process_headers(data.get('deep_headers'))
+        db.session.commit()
+        return jsonify({'code': 0, 'msg': '更新成功'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'code': 500, 'msg': f'更新失败: {str(e)}'})
+
+@bp.route('/api/crawler_sources', methods=['DELETE'])
+@login_required
+def crawler_sources_delete_api():
+    ids = request.json.get('ids', [])
+    if not ids:
+        return jsonify({'code': 400, 'msg': '请选择要删除的数据源'})
+    try:
+        CrawlerSource.query.filter(CrawlerSource.id.in_(ids)).delete(synchronize_session=False)
+        db.session.commit()
+        return jsonify({'code': 0, 'msg': '删除成功'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'code': 500, 'msg': f'删除失败: {str(e)}'})
+
+@bp.route('/api/crawler_sources/options', methods=['GET'])
+@login_required
+def crawler_sources_options_api():
+    # Include built-ins and DB entries
+    options = [
+        {'key': 'baidu', 'name': '百度新闻'},
+        {'key': 'xinhua', 'name': '新华网'}
+    ]
+    for s in CrawlerSource.query.filter_by(enabled=True).all():
+        options.append({'key': s.key, 'name': s.name})
+    return jsonify({'code': 0, 'msg': 'success', 'data': options})
+
+@bp.route('/api/crawler_sources/test', methods=['GET'])
+@login_required
+def crawler_sources_test_api():
+    src_id = request.args.get('id', type=int)
+    if not src_id:
+        return jsonify({'code': 400, 'msg': 'ID不能为空'})
+    src = CrawlerSource.query.get(src_id)
+    if not src:
+        return jsonify({'code': 404, 'msg': '数据源不存在'})
+    try:
+        import importlib
+        module = importlib.import_module(src.module)
+        cls = getattr(module, src.class_name)
+        inst = cls()
+        ok = hasattr(inst, 'search') or hasattr(inst, 'fetch_news')
+        return jsonify({'code': 0, 'msg': '加载成功' if ok else '类缺少必要方法'})
+    except Exception as e:
+        return jsonify({'code': 500, 'msg': f'加载失败: {str(e)}'})
+
+@bp.route('/api/crawler_sources/repair', methods=['POST'])
+@login_required
+def crawler_sources_repair_api():
+    try:
+        from app.crawler.crawler import CrawlerService
+        srv = CrawlerService()
+        # Trigger reload
+        srv._load_db_sources()
+        return jsonify({'code': 0, 'msg': '修复完成'})
+    except Exception as e:
+        return jsonify({'code': 500, 'msg': f'修复失败: {str(e)}'})
+
 @bp.route('/api/deep_collect', methods=['POST'])
 @login_required
 def deep_collect_api():
     url = request.json.get('url')
     if not url:
         return jsonify({"code": 400, "msg": "URL不能为空"})
-        
-    # 根据URL选择爬虫
-    if 'news.cn' in url or 'xinhuanet' in url:
-        crawler = XinhuaCrawler()
-    else:
-        crawler = BaiduCrawler()
-        
-    result = crawler.deep_collect(url)
+    result = service.deep_collect(url)
     
     return jsonify({
         "code": 0,
@@ -653,8 +865,11 @@ def warehouse_collect_detail_api():
                 continue
                 
             try:
-                # Fetch and parse
                 result = _fetch_and_parse_detail(item.original_url, rule)
+                if not result:
+                    alt = service.deep_collect(item.original_url)
+                    if alt and alt.get('content'):
+                        result = { 'title': item.title, 'content': alt.get('content') }
                 if result:
                     # Save to ArticleDetail table
                     detail = ArticleDetail.query.filter_by(collected_data_id=item.id).first()

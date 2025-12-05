@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import quote, urlparse
+from urllib.parse import quote, urlparse, urljoin
 import urllib3
 import json
 from lxml import etree
@@ -393,10 +393,28 @@ class BaiduCrawler:
                 # News: .news-img_1VdF6 img, .c-img
                 img_elem = (
                     item.select_one('.news-img_1VdF6 img') or
+                    item.select_one('.c-img img') or
                     item.select_one('.c-img') or 
                     item.select_one('img')
                 )
-                cover = img_elem.get('src') if img_elem else ""
+                cover = ""
+                if img_elem:
+                    for attr in ['src', 'data-src', 'data-actualsrc', 'data-thumb', 'data-url', 'srcset']:
+                        val = img_elem.get(attr)
+                        if val:
+                            cover = val.strip().split(' ')[0]
+                            break
+                    if not cover:
+                        style = img_elem.get('style')
+                        if style and 'background-image' in style:
+                            import re
+                            m = re.search(r'url\(([^)]+)\)', style)
+                            if m:
+                                cover = m.group(1).strip('"\'')
+                    if cover.startswith('//'):
+                        cover = 'https:' + cover
+                    if cover and not cover.startswith('http'):
+                        cover = urljoin('https://www.baidu.com/', cover)
                 
                 if title and title != "无标题":
                     results.append({

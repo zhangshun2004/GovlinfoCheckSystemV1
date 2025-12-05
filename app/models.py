@@ -107,3 +107,27 @@ class AIEngine(db.Model):
 
     def __repr__(self):
         return f'<AIEngine {self.provider_name}-{self.model_name}>'
+
+class CrawlerSource(db.Model):
+    __tablename__ = 'crawler_sources'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False)
+    key = db.Column(db.String(64), unique=True, nullable=False) # e.g. baidu, xinhua, custom key
+    module = db.Column(db.String(256), nullable=False) # python import path
+    class_name = db.Column(db.String(128), nullable=False) # class to instantiate
+    base_url = db.Column(db.String(512))
+    headers = db.Column(db.Text) # JSON string
+    enabled = db.Column(db.Boolean, default=True)
+    search_url = db.Column(db.String(512))
+    search_method = db.Column(db.String(16), default='GET')
+    search_params = db.Column(db.Text)
+    search_headers = db.Column(db.Text)
+    result_is_json = db.Column(db.Boolean, default=True)
+    result_item_xpath = db.Column(db.String(256))
+    field_map = db.Column(db.Text)
+    deep_headers = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<CrawlerSource {self.key}>'

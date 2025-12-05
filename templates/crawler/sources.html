@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="layui-row layui-col-space15">
+    <div class="layui-col-md12">
+        <div class="layui-card">
+            <div class="layui-card-header">爬虫管理</div>
+            <div class="layui-card-body">
+                <div class="layui-btn-group" style="margin-bottom: 10px;">
+                    <button class="layui-btn" id="btnAdd">新增</button>
+                    <button class="layui-btn layui-btn-danger" id="btnDelete">删除</button>
+                    <button class="layui-btn layui-btn-warm" id="btnRepair">修复</button>
+                </div>
+                <table id="sourceTable" lay-filter="sourceTable"></table>
+            </div>
+        </div>
+    </div>
+    <div id="editModal" style="display:none; padding: 15px;">
+        <form class="layui-form" lay-filter="editForm">
+            <input type="hidden" name="id" />
+            <div class="layui-form-item">
+                <label class="layui-form-label">名称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="name" required class="layui-input" />
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">Key</label>
+                <div class="layui-input-block">
+                    <input type="text" name="key" required class="layui-input" />
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">模块</label>
+                <div class="layui-input-block">
+                    <input type="text" name="module" required placeholder="例如 app.crawler.baidu 或 generic" class="layui-input" />
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">类名</label>
+                <div class="layui-input-block">
+                    <input type="text" name="class_name" required placeholder="例如 BaiduCrawler" class="layui-input" />
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">BaseURL</label>
+                <div class="layui-input-block">
+                    <input type="text" name="base_url" class="layui-input" />
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">Headers</label>
+                <div class="layui-input-block">
+                    <textarea name="headers" class="layui-textarea" placeholder="JSON 或 Raw"></textarea>
+                </div>
+            </div>
+            <fieldset class="layui-elem-field">
+                <legend>搜索配置</legend>
+                <div class="layui-field-box">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">URL</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="search_url" class="layui-input" placeholder="支持占位 {keyword} {page}" />
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">方法</label>
+                        <div class="layui-input-block">
+                            <select name="search_method">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">参数</label>
+                        <div class="layui-input-block">
+                            <textarea name="search_params" class="layui-textarea" placeholder='{"q":"{keyword}", "page":"{page}"}'></textarea>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">请求头</label>
+                        <div class="layui-input-block">
+                            <textarea name="search_headers" class="layui-textarea" placeholder="JSON 或 Raw"></textarea>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">JSON结果</label>
+                        <div class="layui-input-block">
+                            <input type="checkbox" name="result_is_json" lay-skin="switch" lay-text="是|否" checked>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">列表XPath</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="result_item_xpath" class="layui-input" placeholder="当非JSON时填写" />
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">字段映射</label>
+                        <div class="layui-input-block">
+                            <textarea name="field_map" class="layui-textarea" placeholder='{"items_key":"data", "title":"title", "original_url":"url"}'></textarea>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+            <fieldset class="layui-elem-field">
+                <legend>详情采集配置</legend>
+                <div class="layui-field-box">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">请求头</label>
+                        <div class="layui-input-block">
+                            <textarea name="deep_headers" class="layui-textarea" placeholder="JSON 或 Raw"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+            <div class="layui-form-item">
+                <label class="layui-form-label">启用</label>
+                <div class="layui-input-block">
+                    <input type="checkbox" name="enabled" lay-skin="switch" lay-text="ON|OFF" checked>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn" lay-submit lay-filter="saveSource">保存</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+layui.use(['table','form','layer','jquery'], function(){
+    var table = layui.table; var form = layui.form; var layer = layui.layer; var $ = layui.jquery;
+    var tableIns = table.render({
+        elem: '#sourceTable',
+        url: "{{ url_for('crawler.crawler_sources_list_api') }}",
+        method: 'GET',
+        page: true,
+        cols: [[
+            {type:'checkbox'},
+            {field:'id', title:'ID', width:80},
+            {field:'name', title:'名称'},
+            {field:'key', title:'Key'},
+            {field:'module', title:'模块'},
+            {field:'class_name', title:'类名'},
+            {field:'search_method', title:'方法', width:100},
+            {field:'search_url', title:'搜索URL'},
+            {field:'enabled', title:'启用', width:100, templet:function(d){ return d.enabled ? '<span class="layui-badge">ON</span>' : '<span class="layui-badge">OFF</span>'; }},
+            {title:'操作', width:220, toolbar:'#rowBar'}
+        ]]
+    });
+
+    $('#btnAdd').on('click', function(){
+        form.val('editForm', {id:'', name:'', key:'', module:'generic', class_name:'', base_url:'', headers:'', search_url:'', search_method:'GET', search_params:'', search_headers:'', result_is_json:true, result_item_xpath:'', field_map:'', deep_headers:'', enabled:true});
+        layer.open({ type:1, title:'新增爬虫', area:['600px','800px'], content:$('#editModal') });
+    });
+
+    $('#btnDelete').on('click', function(){
+        var check = table.checkStatus('sourceTable').data;
+        if(check.length===0){ layer.msg('请选择要删除的数据源'); return; }
+        var ids = check.map(function(i){ return i.id; });
+        layer.confirm('确定删除选中项？', function(index){
+            $.ajax({ url:"{{ url_for('crawler.crawler_sources_delete_api') }}", type:'DELETE', contentType:'application/json', data: JSON.stringify({ids:ids}), success:function(res){
+                if(res.code===0){ layer.msg('删除成功'); tableIns.reload({page:{curr:1}}); } else { layer.msg(res.msg); }
+            }});
+            layer.close(index);
+        });
+    });
+
+    table.on('tool(sourceTable)', function(obj){
+        var d = obj.data;
+        if(obj.event==='edit'){
+            form.val('editForm', d);
+            layer.open({ type:1, title:'编辑爬虫', area:['600px','800px'], content:$('#editModal') });
+        } else if(obj.event==='test'){
+            var loading = layer.load(1);
+            $.get("{{ url_for('crawler.crawler_sources_test_api') }}", {id: d.id}, function(res){
+                layer.close(loading);
+                if(res.code===0){ layer.msg(res.msg, {icon:1}); } else { layer.msg(res.msg, {icon:2}); }
+            });
+        }
+    });
+
+    form.on('submit(saveSource)', function(data){
+        var payload = data.field; payload.enabled = !!payload.enabled;
+        var url = payload.id ? "{{ url_for('crawler.crawler_sources_update_api') }}" : "{{ url_for('crawler.crawler_sources_create_api') }}";
+        var method = payload.id ? 'PUT' : 'POST';
+        $.ajax({ url:url, type:method, contentType:'application/json', data: JSON.stringify(payload), success:function(res){
+            if(res.code===0){ layer.msg('保存成功'); layer.closeAll('page'); tableIns.reload({page:{curr:1}}); } else { layer.msg(res.msg); }
+        }});
+        return false;
+    });
+    $('#btnRepair').on('click', function(){
+        $.post("{{ url_for('crawler.crawler_sources_repair_api') }}", function(res){
+            if(res.code===0){ layer.msg('修复完成'); } else { layer.msg(res.msg); }
+        });
+    });
+});
+</script>
+
+<script type="text/html" id="rowBar">
+    <div class="op-btns">
+        <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+        <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="test">测试加载</a>
+    </div>
+</script>
+<style>
+.op-btns{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+</style>
+{% endblock %}
